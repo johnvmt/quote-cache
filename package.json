@@ -1,6 +1,6 @@
 {
   "name": "quote-cache",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Key-Value store with subscriptions",
   "keywords": [],
   "author": {
@@ -9,8 +9,8 @@
   },
   "repository": {},
   "private": false,
-  "main": "./src/module.js",
-  "module": "./src/module.js",
+  "main": "./src/cache.js",
+  "module": "./src/cache.js",
   "dependencies": {
     "bluebird": "^3.7.2",
     "esm": "^3.2.25",
