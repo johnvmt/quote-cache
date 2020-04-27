@@ -19,18 +19,22 @@ class PouchDBCollection extends DBCollection {
 	}
 
 	async upsertItem(itemID, itemValue) {
-		let dbDoc = await this.getItem(itemID);
+		if(!DBCollection.validDocInputValue(itemValue))
+			throw new Error(DBCollection.ERRORS.INVALID_INPUT_VALUE);
+		else {
+			const dbDoc = await this.getItem(itemID);
 
-		let upsertDoc = Object.assign({
-			_id: itemID
-		}, itemValue);
+			const upsertDoc = Object.assign({
+				_id: itemID
+			}, itemValue);
 
-		if(dbDoc !== undefined && dbDoc.hasOwnProperty('_rev'))
-			upsertDoc._rev = dbDoc._rev;
+			if(dbDoc !== undefined && dbDoc.hasOwnProperty('_rev'))
+				upsertDoc._rev = dbDoc._rev;
 
-		await this.db.put(upsertDoc);
+			await this.db.put(upsertDoc);
 
-		return true;
+			return true;
+		}
 	}
 
 	/**
@@ -69,7 +73,7 @@ class PouchDBCollection extends DBCollection {
 
 	/**
 	 * Subscribe to mutations on an item of any type
-	 * Mutations can be INSERT, UPDATE, or DELETE for any item type
+	 * Mutations can be UPSERT or DELETE for any item type
 	 * Mutations can also be INSERTVALUE or DELETEVALUE for lists and sets
 	 * @param itemID
 	 * @returns {SubscriptionController}
@@ -112,7 +116,7 @@ class PouchDBCollection extends DBCollection {
 		const doc = await this.getItem(itemID);
 
 		return {
-			type: (doc === undefined) ? PouchDBCollection.ITEMTYPES.NONE : PouchDBCollection.ITEMTYPES.DOC,
+			type: (doc === undefined) ? DBCollection.ITEMTYPES.NONE : PouchDBCollection.ITEMTYPES.DOC,
 			value: doc
 		};
 	}
@@ -123,7 +127,8 @@ class PouchDBCollection extends DBCollection {
 	 * @returns {Promise<boolean>}
 	 */
 	async hasItem(itemID) {
-		throw new Error(DBCollection.ERRORS.NOT_IMPLEMENTED);
+		const item = await this.getItem(itemID);
+		return (item !== undefined);
 	}
 
 	/**
@@ -131,20 +136,11 @@ class PouchDBCollection extends DBCollection {
 	 * @param itemID
 	 * @returns {string|GLenum|number|string}
 	 */
-	itemType(itemID) {
-		if(!this.hasItem(itemID))
+	async itemType(itemID) {
+		if(!(await this.hasItem(itemID)))
 			return DBCollection.ITEMTYPES.NONE;
-		else {
-			const itemValue = this._items.get(itemID); // Get directly to get non-converted value
-			if(Array.isArray(itemValue))
-				return DBCollection.ITEMTYPES.LIST;
-			else if(typeof itemValue === 'object' && itemValue !== null)
-				return DBCollection.ITEMTYPES.HASH;
-			else if(itemValue instanceof Set)
-				return  DBCollection.ITEMTYPES.SET;
-			else
-				return  DBCollection.ITEMTYPES.PRIMITIVE;
-		}
+		else
+			return DBCollection.ITEMTYPES.DOC;
 	}
 
 	static get ITEMMUTATIONTYPES() {

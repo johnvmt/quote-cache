@@ -65,18 +65,16 @@ class RedisDBCollection extends DBCollection {
      */
     async deleteItem(itemID) {
         return await this._clients.client.delAsync(itemID);
-
     }
 
     /**
      * Subscribe to mutations on an item of any type
-     * Mutations can be INSERT, UPDATE, or DELETE for any item type
+     * Mutations can be UPSERT or DELETE for any item type
      * Mutations can also be INSERTVALUE or DELETEVALUE for lists and sets
      * @param itemID
      * @returns {SubscriptionController}
      */
     subscribeItem(itemID) {
-
         const self = this;
         const itemSubscription = new SubscriptionController();
 
@@ -107,7 +105,7 @@ class RedisDBCollection extends DBCollection {
      * @returns {Promise<boolean>}
      */
     async hasItem(itemID) {
-        return await this._clients.client.existsAsync(itemID);
+        return Boolean(await this._clients.client.existsAsync(itemID));
     }
 
     /**
@@ -168,7 +166,7 @@ class RedisDBCollection extends DBCollection {
         else
             result = await this._clients.client.setAsync(itemID, itemValue, 'PX', itemTTL);
 
-        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.INSERT);
+        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPSERT);
 
         return result;
     }
@@ -187,7 +185,7 @@ class RedisDBCollection extends DBCollection {
         if(itemTTL !== null)
             await this.setItemTTL(itemTTL, itemTTL);
 
-        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.INSERT);
+        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPSERT);
 
         return result;
     }
@@ -252,7 +250,7 @@ class RedisDBCollection extends DBCollection {
         if(itemTTL !== null)
             await this.setItemTTL(itemID, itemTTL);
 
-        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.INSERT);
+        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPSERT);
 
         return result;
     }
@@ -266,7 +264,7 @@ class RedisDBCollection extends DBCollection {
      */
     async deleteHashItemFields(itemID, fields) {
         const result = await this._clients.client.hdelAsync(itemID, fields);
-        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPDATE);
+        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPSERT);
         return result;
     }
 
@@ -293,12 +291,10 @@ class RedisDBCollection extends DBCollection {
 			if(itemType === DBCollection.ITEMTYPES.HASH) {
                 let newFieldValue = (typeof itemValue === 'object' && itemValue !== null && itemValue.hasOwnProperty(fieldID)) ? itemValue[fieldID] : undefined;
                 if(newFieldValue !== oldFieldValue) {
-                    if(oldFieldValue === undefined)
-                        fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.INSERT, itemID, fieldID, newFieldValue);
-                    else if(newFieldValue === undefined)
+                    if(newFieldValue === undefined)
                         fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.DELETE, itemID, fieldID);
                     else
-                        fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.UPDATE, itemID, fieldID, newFieldValue);
+                        fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.UPSERT, itemID, fieldID, newFieldValue);
                     oldFieldValue = newFieldValue;
                 }
             }
@@ -334,7 +330,7 @@ class RedisDBCollection extends DBCollection {
         if(itemTTL !== null)
             await this.setItemTTL(itemTTL, itemTTL);
 
-        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPDATE);
+        this._publishMutation(itemID, DBCollection.ITEMMUTATIONTYPES.UPSERT);
 
         return result;
     }

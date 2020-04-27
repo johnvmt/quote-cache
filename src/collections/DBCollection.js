@@ -70,7 +70,7 @@ class DBCollection {
 
 	/**
 	 * Subscribe to mutations on an item of any type
-	 * Mutations can be INSERT, UPDATE, or DELETE for any item type
+	 * Mutations can be UPSERT or DELETE for any item type
 	 * Mutations can also be INSERTVALUE or DELETEVALUE for lists and sets
 	 * @param itemID
 	 * @returns {SubscriptionController}
@@ -269,8 +269,7 @@ class DBCollection {
 
 	static get ITEMMUTATIONTYPES() {
 		return Object.freeze({
-			INSERT: 'INSERT',
-			UPDATE: 'UPDATE',
+			UPSERT: 'UPSERT',
 			DELETE: 'DELETE',
 			INSERTVALUES: 'INSERTVALUES',
 			DELETEVALUES: 'DELETEVALUES'
@@ -279,8 +278,7 @@ class DBCollection {
 
 	static get HASHITEMFIELDMUTATIONTYPES() {
 		return Object.freeze({
-			INSERT: 'INSERT',
-			UPDATE: 'UPDATE',
+			UPSERT: 'UPSERT',
 			DELETE: 'DELETE'
 		});
 	}
@@ -288,10 +286,10 @@ class DBCollection {
 	static get ITEMTYPES() {
 		return Object.freeze({
 			HASH: 'HASH',
+			DOC: 'DOC',
 			SET: 'SET',
 			LIST: 'LIST',
 			PRIMITIVE: 'PRIMITIVE',
-			DOC: 'DOC',
 			NONE: 'NONE'
 		});
 	}
@@ -317,6 +315,8 @@ class DBCollection {
 	static validItemInputValue(itemType, testValue) {
 		if(itemType === DBCollection.ITEMTYPES.PRIMITIVE)
 			return DBCollection.validPrimitiveInputValue(testValue);
+		else if(itemType === DBCollection.ITEMTYPES.DOC)
+			return DBCollection.validDocInputValue(testValue);
 		else if(itemType === DBCollection.ITEMTYPES.HASH)
 			return DBCollection.validHashInputValue(testValue);
 		else if(itemType === DBCollection.ITEMTYPES.SET)
@@ -374,6 +374,15 @@ class DBCollection {
 	 * @returns {boolean}
 	 */
 	static validHashInputValue(testValue) {
+		return (typeof testValue === 'object' && testValue !== null);
+	}
+
+	/**
+	 * Returns true if testValue is a valid doc item type (non-null object)
+	 * @param testValue
+	 * @returns {boolean}
+	 */
+	static validDocInputValue(testValue) {
 		return (typeof testValue === 'object' && testValue !== null);
 	}
 

@@ -108,7 +108,7 @@ class LocalDBCollection extends DBCollection {
 			self._itemTTLTimeouts.set(itemID, setTimeout(() => {
 				self._itemTTLTimeouts.delete(itemID);
 				self.deleteItem(itemID);
-			}, itemTTL * 1000));
+			}, itemTTL));
 			return true;
 		}
 		else
@@ -261,12 +261,10 @@ class LocalDBCollection extends DBCollection {
 			if(self._itemOfType(itemID, DBCollection.ITEMTYPES.HASH)) {
 				let newFieldValue = (this.hasItem(itemID)) ? (self.getItem(itemID))[fieldID] : undefined;
 				if(newFieldValue !== oldFieldValue) {
-					if(oldFieldValue === undefined)
-						fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.INSERT, itemID, fieldID, newFieldValue);
-					else if(newFieldValue === undefined)
+					if(newFieldValue === undefined)
 						fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.DELETE, itemID, fieldID, newFieldValue);
 					else
-						fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.UPDATE, itemID, fieldID, newFieldValue);
+						fieldSubscription.mutation(DBCollection.HASHITEMFIELDMUTATIONTYPES.UPSERT, itemID, fieldID, newFieldValue);
 					oldFieldValue = newFieldValue;
 				}
 			}
@@ -428,12 +426,11 @@ class LocalDBCollection extends DBCollection {
 	 * @private
 	 */
 	_setItem(itemID, itemValue, itemTTL = null) {
-		const mutationType = this.hasItem(itemID) ? DBCollection.ITEMMUTATIONTYPES.UPDATE : DBCollection.ITEMMUTATIONTYPES.INSERT;
 		this._items.set(itemID, itemValue);
 		if(typeof itemTTL === 'number')
 			this.setItemTTL(itemID, itemTTL);
 		const itemType = this.itemType(itemID);
-		this._emitItemMutation(mutationType, itemID, itemType, itemValue);
+		this._emitItemMutation(DBCollection.ITEMMUTATIONTYPES.UPSERT, itemID, itemType, itemValue);
 		return true;
 	}
 
